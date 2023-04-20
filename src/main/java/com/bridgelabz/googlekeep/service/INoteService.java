@@ -2,7 +2,6 @@ package com.bridgelabz.googlekeep.service;
 
 import java.util.List;
 
-import com.bridgelabz.googlekeep.dto.LabelDto;
 import com.bridgelabz.googlekeep.dto.NoteDto;
 import com.bridgelabz.googlekeep.dto.ReminderDto;
 import com.bridgelabz.googlekeep.model.Note;
@@ -11,26 +10,26 @@ public interface INoteService {
 
 	public Note create(NoteDto noteDto, String token);
 
-	public Note update(NoteDto noteDTO, String token, int id);
+	public Note update(NoteDto noteDTO, String token, int noteId);
 
-	public String delete(int id);
+	public String delete(String token,int noteId);
 
-	public Note get(int id);
+	public Note get(String token,int noteId);
 
-	public List<Note> getAllNotes();
+	public List<Note> getAllNotes(String token);
 
-	public Note doPin(int id);
+	public Note doPin(String token,int noteId);
 
-	public Note doTrash(int id);
+	public Note doTrash(String token,int noteId);
 
-	public Note doArchive(int id);
+	public Note doArchive(String token,int noteId);
 
-	public Note addReminder(int id, ReminderDto reminderDto);
+	public Note addReminder(String token,int noteId, ReminderDto reminderDto);
 
-	public Note deleteReminder(int id);
+	public Note deleteReminder(String token,int noteId);
 
-	public Note addLabel(int id, int labelId);
+	//public Note addLabel(String token,int noteId, int labelId);
 
-	public Note deleteLabel(int id, int labelId);
+	//public Note deleteLabel(String token,int noteId, int labelId);
 
 }

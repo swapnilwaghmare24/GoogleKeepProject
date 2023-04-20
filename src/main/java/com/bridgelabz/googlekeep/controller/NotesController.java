@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.bridgelabz.googlekeep.dto.LabelDto;
 import com.bridgelabz.googlekeep.dto.NoteDto;
 import com.bridgelabz.googlekeep.dto.ReminderDto;
 import com.bridgelabz.googlekeep.dto.ResponseDto;
@@ -28,95 +28,96 @@ public class NotesController {
 	@Autowired
 	INoteService service;
 
-	@PostMapping("/create/{token}")
-	public ResponseEntity<ResponseDto> createNote(@RequestBody NoteDto noteDto, @PathVariable String token) {
+	@PostMapping("/create")
+	public ResponseEntity<ResponseDto> createNote(@RequestBody NoteDto noteDto, @RequestHeader String token) {
 		Note note = service.create(noteDto, token);
 		ResponseDto responseDto = new ResponseDto("Note created", note);
 		return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
 	}
 
-	@PutMapping("/update/{token}/{id}")
-	public ResponseEntity<ResponseDto> updateNote(@RequestBody NoteDto noteDto, @PathVariable String token,
-			@PathVariable int id) {
-		Note note = service.update(noteDto, token, id);
+	@PutMapping("/update/{noteId}")
+	public ResponseEntity<ResponseDto> updateNote(@RequestBody NoteDto noteDto, @RequestHeader String token,
+			@PathVariable int noteId) {
+		Note note = service.update(noteDto, token, noteId);
 		ResponseDto responseDto = new ResponseDto("note updated", note);
 		return new ResponseEntity<>(responseDto, HttpStatus.OK);
 	}
 
-	@DeleteMapping("/delete/{id}")
-	public ResponseEntity<ResponseDto> delete(@PathVariable int id) {
-		String response = service.delete(id);
+	@DeleteMapping("/delete/{noteId}")
+	public ResponseEntity<ResponseDto> deleteNote(@RequestHeader String token, @PathVariable int noteId) {
+		String response = service.delete(token, noteId);
 		ResponseDto responseDto = new ResponseDto("Deletion status : ", response);
-		return new ResponseEntity(response, HttpStatus.OK);
+		return new ResponseEntity<>(responseDto, HttpStatus.OK);
 	}
 
-	@GetMapping("/get/{id}")
-	public ResponseEntity<Object> getNote(@PathVariable int id) {
-		Note note = service.get(id);
+	@GetMapping("/get/{noteId}")
+	public ResponseEntity<Object> getNote(@RequestHeader String token, @PathVariable int noteId) {
+		Note note = service.get(token, noteId);
 		ResponseDto responseDto = new ResponseDto("Required note is", note);
 		return new ResponseEntity<>(responseDto, HttpStatus.OK);
 
 	}
 
 	@GetMapping("/getall")
-	public ResponseEntity<ResponseDto> getNotes() {
-		List<Note> notes = service.getAllNotes();
+	public ResponseEntity<ResponseDto> getNotes(@PathVariable String token) {
+		List<Note> notes = service.getAllNotes(token);
 
 		ResponseDto responseDto = new ResponseDto("All notes are", notes);
 		return new ResponseEntity<>(responseDto, HttpStatus.OK);
 
 	}
 
-	@PutMapping("/pin/{id}")
-	public ResponseEntity<ResponseDto> pinNote(@PathVariable int id) {
-		Note note = service.doPin(id);
+	@PutMapping("/pin/{noteId}")
+	public ResponseEntity<ResponseDto> pinNote(@RequestHeader String token, @PathVariable int noteId) {
+		Note note = service.doPin(token, noteId);
 		ResponseDto response = new ResponseDto("Note pin done : ", note);
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@PutMapping("/trash/{id}")
-	public ResponseEntity<ResponseDto> trashNote(@PathVariable int id) {
-		Note note = service.doTrash(id);
+	@PutMapping("/trash/{noteId}")
+	public ResponseEntity<ResponseDto> trashNote(@RequestHeader String token, @PathVariable int noteId) {
+		Note note = service.doTrash(token, noteId);
 		ResponseDto response = new ResponseDto("Note trash done : ", note);
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@PutMapping("/archive/{id}")
-	public ResponseEntity<ResponseDto> archiveNote(@PathVariable int id) {
-		Note note = service.doArchive(id);
+	@PutMapping("/archive/{noteId}")
+	public ResponseEntity<ResponseDto> archiveNote(@RequestHeader String token, @PathVariable int noteId) {
+		Note note = service.doArchive(token, noteId);
 		ResponseDto response = new ResponseDto("Note archive done : ", note);
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
-	@PutMapping("/reminder/{id}")
-	public ResponseEntity<ResponseDto> addReminder(@PathVariable int id, @RequestBody ReminderDto reminderDto) {
-		Note note = service.addReminder(id, reminderDto);
+	@PutMapping("/reminder/{noteId}")
+	public ResponseEntity<ResponseDto> addReminder(@RequestHeader String token, @PathVariable int noteId,
+			@RequestBody ReminderDto reminderDto) {
+		Note note = service.addReminder(token, noteId, reminderDto);
 		ResponseDto responseDto = new ResponseDto("Reminder added successfully ", note);
 		return new ResponseEntity<>(responseDto, HttpStatus.OK);
 
 	}
 
-	@DeleteMapping("/reminder/{id}")
-	public ResponseEntity<ResponseDto> deleteReminder(@PathVariable int id) {
-		Note note = service.deleteReminder(id);
+	@DeleteMapping("/reminder/{noteId}")
+	public ResponseEntity<ResponseDto> deleteReminder(@RequestHeader String token, @PathVariable int noteId) {
+		Note note = service.deleteReminder(token, noteId);
 		ResponseDto responseDto = new ResponseDto("Remainder deleted successfully", note);
 		return new ResponseEntity<>(responseDto, HttpStatus.OK);
 	}
-	
-	@PostMapping("/addlabel/{id}/{labelId}")
-	ResponseEntity<RequestBody> addLabel(@PathVariable int id,@PathVariable int labelId)
-	{
-		Note note=service.addLabel(id,labelId);
-		ResponseDto responseDto=new ResponseDto("Label added successfully to note ",note);
-		return new ResponseEntity(responseDto,HttpStatus.OK);
+
+	/*@PostMapping("/addlabel/{token}/{noteId}/{labelId}")
+	ResponseEntity<ResponseDto> addLabel(@RequestHeader String token, @PathVariable int noteId,
+			@PathVariable int labelId) {
+		Note note = service.addLabel(token, noteId, labelId);
+		ResponseDto responseDto = new ResponseDto("Label added successfully to note ", note);
+		return new ResponseEntity<>(responseDto, HttpStatus.OK);
 	}
-	
-	@DeleteMapping("/removelabel/{id}/{labelId}")
-	ResponseEntity<RequestBody> removeLabel(@PathVariable int id,@PathVariable int labelId)
-	{
-		Note note=service.deleteLabel(id,labelId);
-		ResponseDto responseDto=new ResponseDto("Label deleted successfully from note ",note);
-		return new ResponseEntity(responseDto,HttpStatus.OK);
-	}
+
+	@DeleteMapping("/removelabel/{token}/{noteId}/{labelId}")
+	ResponseEntity<ResponseDto> removeLabel(@RequestHeader String token, @PathVariable int noteId,
+			@PathVariable int labelId) {
+		Note note = service.deleteLabel(token, noteId, labelId);
+		ResponseDto responseDto = new ResponseDto("Label deleted successfully from note ", note);
+		return new ResponseEntity<>(responseDto, HttpStatus.OK);
+	}*/
 
 }

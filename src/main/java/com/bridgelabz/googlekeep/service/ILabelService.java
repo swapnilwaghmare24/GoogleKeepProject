@@ -9,11 +9,11 @@ import com.bridgelabz.googlekeep.model.Label;
 
 public interface ILabelService {
 
-	Label createLabel(LabelDto labelDto);
+	Label createLabel(String token, LabelDto labelDto);
 
 	Label updateLabel(int labelId, LabelDto labelDto);
 
-	String deleteLabel(int labelId);
+	String deleteLabel(String token, int labelId, int noteId);
 
 	 Label getLabelById(int labelId);
 

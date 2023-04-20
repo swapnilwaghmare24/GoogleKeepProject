@@ -8,5 +8,6 @@ import lombok.NoArgsConstructor;
 public class LabelDto {
 	
 	private String labelName;
+	private int noteId;
 	
 }

@@ -40,16 +40,22 @@ public class UserService implements IUserService {
 	}
 
 	@Override
-	public String login(String email, String password) {
+	public String login(String email, String password)throws GoogleKeepException {
 		User userModels=repository.findByEmail(email);
-		
+		if(userModels!=null)
+		{
 		if(password.equals(userModels.getPassword()))
 		{
 			String token=tokenUtil.createToken(userModels.getUserId());
 			return token;
 		}
+		
+		throw new GoogleKeepException("Invalid password");
+		}
+		
+		throw new GoogleKeepException("Invalid email ");
 	
-	return null;	}
+	}
 
 	@Override
 	public List<User> getAllUsers() {
@@ -69,4 +75,16 @@ public class UserService implements IUserService {
 		return "User not present so not deleted";
 	}
 
+	public boolean isValidUser(String token) throws GoogleKeepException
+	{
+		int userId=tokenUtil.decodeToken(token);
+		Optional<User> user=repository.findById(userId);
+		if(user.isPresent())
+		{
+			return true;
+		}
+		else {
+			throw new GoogleKeepException("User is invalid");
+		}
+	}
 }

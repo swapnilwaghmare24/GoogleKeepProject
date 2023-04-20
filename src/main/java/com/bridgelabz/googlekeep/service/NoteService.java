@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.bridgelabz.googlekeep.dto.LabelDto;
 import com.bridgelabz.googlekeep.dto.NoteDto;
 import com.bridgelabz.googlekeep.dto.ReminderDto;
 import com.bridgelabz.googlekeep.exception.GoogleKeepException;
@@ -17,8 +16,6 @@ import com.bridgelabz.googlekeep.repository.LabelRepository;
 import com.bridgelabz.googlekeep.repository.NoteRepository;
 import com.bridgelabz.googlekeep.repository.UserRepository;
 import com.bridgelabz.googlekeep.util.TokenUtil;
-
-import net.bytebuddy.dynamic.scaffold.MethodRegistry.Handler.ForAbstractMethod;
 
 @Service
 public class NoteService implements INoteService {
@@ -31,131 +28,155 @@ public class NoteService implements INoteService {
 	NoteRepository noteRepository;
 	@Autowired
 	LabelRepository labelRepository;
+	@Autowired
+	UserService userService;
 
 	@Override
 	public Note create(NoteDto noteDto, String token) {
-		int id = tokenUtil.decodeToken(token);
-		Optional<User> user = userRepository.findById(id);
-		Note note = new Note(noteDto, user.get());
-		noteRepository.save(note);
+		int userId = tokenUtil.decodeToken(token);
+		Optional<User> user = userRepository.findById(userId);
+		if (user.isPresent()) {
+			Note note = new Note(noteDto, user.get());
 
-		return note;
+			noteRepository.save(note);
+
+			return note;
+		}
+		throw new GoogleKeepException("user is invalid");
 	}
 
 	@Override
-	public Note update(NoteDto noteDto, String token, int id) {
-		int userId = tokenUtil.decodeToken(token);
-		Optional<User> user = userRepository.findById(userId);
-		Note oldNote = noteRepository.findById(id).get();
-		if (oldNote != null) {
-			// Note newNote=new Note(noteDto,user.get());
-			// noteRepository.save(newNote);
-			// return newNote;
+	public Note update(NoteDto noteDto, String token, int noteId) throws GoogleKeepException {
+		Optional<Note> oldNote = noteRepository.findById(noteId);
+		if (userService.isValidUser(token)) {
+			if (oldNote.isPresent()) {
+				// Note newNote=new Note(noteDto,user.get());
+				// noteRepository.save(newNote);
+				// return newNote;
 
-			oldNote.updateNote(noteDto);
-			return oldNote;
+				oldNote.get().updateNote(noteDto);
+				return oldNote.get();
 
+			}
 		}
+
+		throw new GoogleKeepException("Note is invalid");
+
+	}
+
+	@Override
+	public String delete(String token, int noteId) throws GoogleKeepException {
+		int userId=tokenUtil.decodeToken(token);
+		Optional<User> user=userRepository.findById(userId);
+		Optional<Note> note = noteRepository.findById(noteId);
+		
+		
+			if(userService.isValidUser(token))
+			{
+			if (note.isPresent()) {
+				note.get().getUsers().remove(user.get());
+				
+				noteRepository.deleteById(noteId);
+				return "success";
+			}
+		}
+		throw new GoogleKeepException("note id is not valid");
+	}
+
+	@Override
+	public Note get(String token, int noteId) throws GoogleKeepException {
+		if (userService.isValidUser(token))
+			return noteRepository.findById(noteId).orElseThrow(() -> new GoogleKeepException("Invalid id"));
 		return null;
 	}
 
 	@Override
-	public String delete(int id) {
-		Optional<Note> note = noteRepository.findById(id);
-		if (note != null) {
-			noteRepository.deleteById(id);
-			return "success";
+	public List<Note> getAllNotes(String token) throws GoogleKeepException {
+		if (userService.isValidUser(token))
+			return noteRepository.findAll();
+		throw new GoogleKeepException("Notes not present");
+	}
+
+	@Override
+	public Note doPin(String token, int noteId) throws GoogleKeepException {
+		Note note = noteRepository.findById(noteId).get();
+		if (userService.isValidUser(token) && note != null) {
+			note.setPinned(!note.isPinned());
+			noteRepository.save(note);
+			return note;
 		}
-		return "failed";
-	}
-
-	@Override
-	public Note get(int id) {
-		return noteRepository.findById(id).orElseThrow(() -> new GoogleKeepException("Invalid id"));
-	}
-
-	@Override
-	public List<Note> getAllNotes() {
-
-		return noteRepository.findAll();
-	}
-
-	@Override
-	public Note doPin(int id) {
-		Note note = noteRepository.findById(id).get();
-		note.setPinned(!note.isPinned());
-		noteRepository.save(note);
-		return note;
+		throw new GoogleKeepException("Note is not valid");
 
 	}
 
 	@Override
-	public Note doTrash(int id) {
-		Note note = noteRepository.findById(id).get();
-		note.setTrashed(!note.isTrashed());
-		noteRepository.save(note);
-		return note;
+	public Note doTrash(String token, int noteId) throws GoogleKeepException {
+
+		Note note = noteRepository.findById(noteId).get();
+		if (userService.isValidUser(token) && note != null) {
+			note.setTrashed(!note.isTrashed());
+			noteRepository.save(note);
+			return note;
+		}
+		throw new GoogleKeepException("Unable to trash note");
 	}
 
 	@Override
-	public Note doArchive(int id) {
-		Note note = noteRepository.findById(id).get();
-		note.setArchived(!note.isArchived());
-		noteRepository.save(note);
-		return note;
+	public Note doArchive(String token, int noteId) throws GoogleKeepException {
+
+		Note note = noteRepository.findById(noteId).get();
+		if (userService.isValidUser(token) && note != null) {
+			note.setArchived(!note.isArchived());
+			noteRepository.save(note);
+			return note;
+		}
+		throw new GoogleKeepException("Unable to archive note");
 	}
 
 	@Override
-	public Note addReminder(int id, ReminderDto reminderDto) {
-		Note note=noteRepository.findById(id).get();
-		if(note!=null)
-		{
+	public Note addReminder(String token, int noteId, ReminderDto reminderDto) throws GoogleKeepException {
+		Note note = noteRepository.findById(noteId).get();
+		if (userService.isValidUser(token) && note != null) {
 			note.setReminder(reminderDto.getReminder());
 			noteRepository.save(note);
 			return note;
 		}
-		return null;
+		throw new GoogleKeepException("Unable to add remainder");
 	}
 
 	@Override
-	public Note deleteReminder(int id) {
-		Note note=noteRepository.findById(id).get();
-		if(note!=null)
-		{
+	public Note deleteReminder(String token, int noteId) throws GoogleKeepException {
+		Note note = noteRepository.findById(noteId).get();
+		if (userService.isValidUser(token) && note != null) {
 			note.setReminder(null);
 			noteRepository.save(note);
 			return note;
 		}
-		return note;
+		throw new GoogleKeepException("Unable to remove remainder");
 	}
 
-	@Override
-	public Note addLabel(int id, int labelId) {
-		Note note=noteRepository.findById(id).get();
-		Label label=labelRepository.findById(labelId).get();
-		if(note!=null && label!=null)
-		{
-			note.setLabel(label.getLabelName());
+	/*@Override
+	public Note addLabel(String token, int noteId, int labelId) throws GoogleKeepException {
+		Note note = noteRepository.findById(noteId).get();
+		Label label = labelRepository.findById(labelId).get();
+		if (userService.isValidUser(token) && note != null && label != null) {
+			note.addLabel(label);
 			noteRepository.save(note);
 			return note;
 		}
-		return null;
-	}
-	
-	@Override
-	public Note deleteLabel(int id, int labelId) {
-		Note note=noteRepository.findById(id).get();
-		Label label=labelRepository.findById(labelId).get();
-		if(note!=null && label!=null)
-		{
-			note.setLabel(null);
+		throw new GoogleKeepException("Unable add label to note");
+	}*/
+
+	/*@Override
+	public Note deleteLabel(String token, int noteId, int labelId) throws GoogleKeepException {
+		Note note = noteRepository.findById(noteId).get();
+		Label label = labelRepository.findById(labelId).get();
+		if (userService.isValidUser(token) && note != null && label != null) {
+			note.removeLabel(label);
 			noteRepository.save(note);
 			return note;
 		}
-		return null;
-	}
-
-
-	
+		throw new GoogleKeepException("Unable to delete label from note");
+	}*/
 
 }
